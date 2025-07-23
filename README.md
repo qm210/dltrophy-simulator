@@ -49,3 +49,15 @@ You can check with the WLED Web UI "Peek" screen, whether _something_ should be 
 I guess I have to admit that I'm a highly handicapped worst-kind-of-autistic individual with no respect
 or any regard for the emotions and demands of wellbeing of anyone, anything that ever existed
 and this is why I allow myself (and yourself!) to also use that spelling of the word "simulator". 
+
+# Building
+
+## Fedora
+Building on Fedora is straight forward.
+
+Install Build Dependencies ( assuming fedora 42)
+`sudo dnf install -y libXi-devel libXcursor-devel libXinerama-devel libXrandr-devel libxkbcommon-devel wayland-devel mesa-libGL-devel mesa-libGL gcc-c++ cmake`
+configure make
+`cmake .`
+build
+`make `
