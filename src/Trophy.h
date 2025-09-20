@@ -54,7 +54,6 @@ struct Trophy {
         posMax = {0, 0, 0};
 
         for (int i = 0; i < N_LEDS; i++) {
-
             isBase[i] = i >= baseStartIndex && i < baseStartIndex + N_LEDS_IN_BASE;
             isLogo[i] = i >= logoStartIndex && i < logoStartIndex + N_LEDS_IN_LOGO;
             isSingleColor[i] = !isLogo[i] && !isBase[i];

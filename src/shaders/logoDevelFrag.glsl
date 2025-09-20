@@ -33,10 +33,14 @@ struct RGB { // last value is only for alignment, never used.
 
 layout(std140) uniform LogoStateBuffer {
     RGB ledColor[nLeds];
-    vec2 logoCenter;
+    vec2 _logoCenter;
     vec2 logoSize;
     int options;
 };
+
+// QM took these as great examples of their kind, might make the logoCenter above superfluid
+vec2 logoCenter = vec2(ledPosition[127].x, ledPosition[131].y);
+float freeScale = 1.4;
 
 #define hasOption(index) (options & (1 << (8 * index))) != 0
 bool maskOnlyPixels = hasOption(0);
@@ -131,7 +135,7 @@ void main() {
 
     extraOutput.x = 0.;   // signals us that we are in the frame
     extraOutput.y = 0.;
-    extraOutput.zw = uv;
+//    extraOutput.zw = uv;
 
     // border frame
     float uvX = uv.x / aspectRatio;
@@ -144,6 +148,8 @@ void main() {
         return;
     }
 
+    uv /= freeScale;
+
     extraOutput.x = 1.;   // signals us that we are in the frame
     extraOutput.y = -1.;  // means "no LED index" (cf. below)
     fragColor = c.yyyx;
@@ -155,11 +161,24 @@ void main() {
     fragColor.r = 0.3 * exp(-10.*(abs(d - 1.) * fract(-0.3 * iTime)));
     */
     vec3 col = fragColor.rgb;
-    // Grüner Bobbel im Ursprung (nur zur Orientierung while devel)
-    col.g = length(uv) < 0.01 ? 1. : 0.;
+    const vec2 cornerTL = vec2(-.5, +.3);
+    const vec2 cornerBL = vec2(-.5, -.3);
+    const vec2 cornerTR = vec2(+.5, +.3);
+    const vec2 cornerBR = vec2(+.5, -.3);
+    // Grüner Böbbel im Ursprung (nur zur Orientierung while devel)
+    if (!hideOrigin) {
+        fragColor.g = float(length(uv) < 0.01)
+            + 0.5 * float(length(uv - cornerTL) < 0.01)
+            + 0.5 * float(length(uv - cornerBL) < 0.01)
+            + 0.5 * float(length(uv - cornerTR) < 0.01)
+            + 0.5 * float(length(uv - cornerBR) < 0.01);
+    }
 
     float slideLoopSec = 4.;
     float slideY = 9. * slideIn(iTime, slideLoopSec, 0.7);
+
+    // when the big logo is around, less of the silly beam please
+    float suppress = smoothstep(0.5, 1, abs(2.1 * slideY));
 
     // and combining some sweet sweet lines (not what you think!)
     //vec2 lineOrigin = vec2(0., 0.15 * sin(-4.1 * iTime) - 0.03);
@@ -168,20 +187,20 @@ void main() {
     vec2 rotCenter = vec2(0, -0.03) - rotation * vec2(0.4, 0.);
     vec2 lineOrigin = antirotation * vec2(-.7, 0.) + rotCenter;
     vec2 lineTarget = antirotation * vec2(.3, 0.) + rotCenter;
-    d = sdLine(uv, lineOrigin, lineTarget);
+    // oh yeah and why not scale it, while suppressing it?
+    d = sdLine(uv * suppress, lineOrigin, lineTarget);
     // "beam" effect: blur closer to b
     float blur = exp(-3. * length(uv - lineTarget));
     col.r = exp(-(50. - 49.9999995*blur)*d);
     col.g = 0.8 * blur * col.r;
-    float suppress = smoothstep(0.8, 1, abs(2.1 * slideY));
-    // less of the beam please
+
     float beamLoopSec = 20.;
     float beamTime = mod(iTime, beamLoopSec);
     suppress *= smoothstep(12., 14., beamTime)
     * (1. - smoothstep(beamLoopSec - 1., beamLoopSec, beamTime));
     col.rg *= suppress;
 
-    fragColor.rgb = col;
+    fragColor.rgb = max(fragColor.rgb, col);
 
     // the bright bleu path :) (hint: it's probably an A from deAdline)
     const vec2 triLeft = vec2(-0.6, -0.32);
@@ -252,7 +271,7 @@ void main() {
     vec2 pixelPos = c.yy;
     for (int i = minLogoLed; i <= maxLogoLed; i++) {
         // makeshift, but one could use any origin / scale -- this is about being useful quickly!
-        vec2 ledPos = (ledPosition[i].xy / logoSize.yy * 0.75) - logoCenter.xy + vec2(0, 0.5);
+        vec2 ledPos = (ledPosition[i].xy / logoSize.xx) - logoCenter;
         d = sdfCircle(uv, ledPos, 0.01);
         if (d < dMin) {
             dMin = d;
@@ -262,41 +281,23 @@ void main() {
         ledBorder += d < 0.008 ? 0. : exp(-200.*d);
         ledMask += d < 0.008 ? 1. : exp(-200.*abs(d - 0.008));
     }
+    extraOutput.y = float(pixelIndex);
+    extraOutput.zw = logoSize;
+
     ledMask = clamp(ledMask, 0., 1.);
     if (maskOnlyPixels) {
         fragColor.rgb = mix(vec3(0.), col, ledMask);// col * (0.1 + 0.9 * mask);
     } else {
         fragColor.rgb += col;
     }
-    fragColor.rgb = max(fragColor.rgb, c.xxx * ledBorder);
+    if (!hidePixels) {
+        fragColor.rgb = max(fragColor.rgb, c.xxx * ledBorder);
+    }
 
-    extraOutput.y = float(pixelIndex);
-
-    fragColor.rgb += vec3(0.7, 0.2, 0.4) * sdfMouseCrosshair();
-    fragColor = vec4(clampVec3(fragColor.rgb), 1.);
+    if (!hideCrosshair) {
+        fragColor.rgb += vec3(0.7, 0.2, 0.4) * sdfMouseCrosshair();
+        fragColor = vec4(clampVec3(fragColor.rgb), 1.);
+    }
 
     return;
-
-    // blend previous image
-    vec2 st = (gl_FragCoord.xy) / (iResolution + iRect.xy);
-    vec4 previousImage = texture(iPreviousImage, st);
-
-    if (iPass == POST_PASS) {
-        col = previousImage.rgb / previousImage.a;
-        col = max(col, fragColor.rgb);
-        // postProcess(col, uv, st);
-        fragColor = vec4(col, 1.);
-        return;
-    }
-
-    // some previous-image-blending just for the jux of it
-    fragColor.rgb = mix(fragColor.rgb, previousImage.rgb, 0.1);
-    fragColor.a = 1.;
-
-    bool clicked = distance(iMouse.zw, gl_FragCoord.xy - iRect.xy) < 1.;
-    if (!clicked) {
-        // extraOutput.y must have been set somewhere above,
-        // but if not even clicked, reset to "nothing clicked".
-        extraOutput.y = -1.;
-    }
 }
