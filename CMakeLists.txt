@@ -116,6 +116,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         src/prototyper/fx
 )
 
+# this is because Windows has not getopt on its own, other than Linuxes.
+# it is for reading the command line arguments, pretty straightforward.
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_sources(${PROJECT_NAME} PRIVATE
+            thirdparty/freegetopt/getopt.c
+    )
+    target_include_directories(${PROJECT_NAME} PRIVATE
+            thirdparty/freegetopt/
+    )
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
         glfw
         OpenGL::GL
