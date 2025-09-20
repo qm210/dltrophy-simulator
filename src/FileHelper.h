@@ -21,10 +21,7 @@ namespace FileHelper {
                 std::filesystem::absolute(
                         std::filesystem::path(path)
                 ).string();
-        auto message = std::format(
-                "File not found: {0}",
-                absolute_path
-        );
+        auto message = std::format("File not found: {0}", absolute_path);
         throw std::runtime_error(message);
     }
 

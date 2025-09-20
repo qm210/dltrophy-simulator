@@ -138,6 +138,7 @@ bool Config::tryReadFile() {
             customFragmentShaderPath = jShaders.value("fragment", "");
             hotReloadShaders = jShaders.value("reload", hotReloadShaders);
             useLogoDevelShader = jShaders.value("useLogoDevelShader", useLogoDevelShader);
+            logoDevelShaderPath = jShaders.value("logoDevelShaderPath", logoDevelShaderPath);
         }
 
         udpPort = currentJson->value("udpPort", udpPort);
@@ -171,6 +172,7 @@ void Config::store(GLFWwindow* window, ShaderState* state) const {
        {"fragment", customFragmentShaderPath},
        {"reload", hotReloadShaders},
        {"useLogoDevelShader", useLogoDevelShader},
+       {"logoDevel", logoDevelShaderPath},
     };
     j["udpPort"] = udpPort;
     j["usePrototyper"] = usePrototyper;

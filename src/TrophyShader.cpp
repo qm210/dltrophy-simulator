@@ -11,10 +11,10 @@
 #else
 const std::string default_vertex_shader_path = "./shaders/vertex.glsl";
 const std::string default_fragment_shader_path = "./shaders/fragment.glsl";
-const std::string logo_devel_fragment_shader_path = "./shaders/logoDevelFrag.glsl";
 #endif
 
-TrophyShader::TrophyShader(const Config& config, ShaderState *state)
+
+TrophyShader::TrophyShader(Config& config, ShaderState *state)
 : state(state) {
     if (std::filesystem::exists(config.customVertexShaderPath)) {
         vertex.read(config.customVertexShaderPath);
@@ -26,10 +26,23 @@ TrophyShader::TrophyShader(const Config& config, ShaderState *state)
         vertex.read(default_vertex_shader_path);
 #endif
     }
+
+    logoDevelModeError = "";
     if (config.useLogoDevelShader) {
-        fragment.read(logo_devel_fragment_shader_path);
+        try {
+            fragment.read(config.logoDevelShaderPath);
+            return;
+        } catch (const std::exception& e) {
+            logoDevelModeError = config.logoDevelShaderPath.empty()
+                    ? std::format("No Logo-Devel-Shader defined, check your config!\n{}",
+                                  std::filesystem::absolute(config.path).string())
+                    : std::format("Cannot load Logo-Devel-Shader from {}:\n{}",
+                                  config.logoDevelShaderPath, e.what());
+            config.useLogoDevelShader = false;
+        }
     }
-    else if (std::filesystem::exists(config.customFragmentShaderPath)) {
+
+    if (std::filesystem::exists(config.customFragmentShaderPath)) {
         fragment.read(config.customFragmentShaderPath);
     }
     else {
@@ -186,13 +199,16 @@ std::string TrophyShader::collectErrorLogs(std::optional<ProgramMeta> otherProgr
 }
 
 bool TrophyShader::assertSuccess(const std::function<void(const std::string &)> &callback) const {
-    const auto errorLog = collectErrorLogs();
-    if (!errorLog.empty()) {
-        callback(errorLog);
+    if (!logoDevelModeError.empty()) {
+        callback(logoDevelModeError);
         return false;
-    } else {
-        return true;
     }
+    const auto shaderErrors = collectErrorLogs();
+    if (!shaderErrors.empty()) {
+        callback(shaderErrors);
+        return false;
+    }
+    return true;
 }
 
 std::array<float, 18> TrophyShader::createQuadVertices() {

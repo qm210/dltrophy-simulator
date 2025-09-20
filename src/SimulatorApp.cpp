@@ -186,7 +186,6 @@ float SimulatorApp::calcAverageFps() {
     void SimulatorApp::showError(const std::string &message) {
         MessageBoxA(nullptr, message.c_str(), "Error", MB_OK | MB_ICONERROR);
         std::cerr << message << std::endl;
-        std::exit(1);
     }
 #else
     void SimulatorApp::showError(const std::string &message) {

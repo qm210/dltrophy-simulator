@@ -29,6 +29,7 @@ public:
     std::string customFragmentShaderPath;
     bool hotReloadShaders = true;
     bool useLogoDevelShader = false;
+    std::string logoDevelShaderPath = "";
 
     bool usePrototyper = false;
 

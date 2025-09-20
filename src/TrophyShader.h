@@ -29,6 +29,7 @@ private:
     std::optional<std::time_t> lastReload;
     bool reloadFailed = false;
     Shader currentMode = TrophyView;
+    std::string logoDevelModeError = "";
 
     GLuint vertexArrayObject = 0;
     GLuint vertexBufferObject = 0;
@@ -57,7 +58,7 @@ private:
     };
 
 public:
-    TrophyShader(const Config& config, ShaderState *state);
+    TrophyShader(Config& config, ShaderState *state);
     ~TrophyShader();
 
     void use();
