@@ -136,6 +136,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         MinimalSocket
 )
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(X11 REQUIRED)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIR})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
+endif()
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         $<$<NOT:$<CONFIG:Debug>>:USE_EMBEDDED_SHADERS>
 )
