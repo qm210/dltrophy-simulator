@@ -33,6 +33,13 @@ struct ShaderOptions {
     bool onlyPyramidFrame;
 };
 
+struct LogoDevelOptions {
+    bool maskOnlyPixels;
+    bool hidePixels;
+    bool hideCrosshair;
+    bool hideOrigin;
+};
+
 struct Parameters {
     // if only floats / ints / other 4 byte-types, this makes alignment easy
     // therefore e.g. do not keep camera position as vec3 -> gets annoying
@@ -107,6 +114,16 @@ struct ShaderState {
         .onlyPyramidFrame = true,
     };
 
+    // --> for Logo-Devel-Shader
+    glm::vec4 logoGeometry {};
+    LogoDevelOptions logoDevelOptions {
+        .maskOnlyPixels = false,
+        .hidePixels = false,
+        .hideCrosshair = false,
+        .hideOrigin = false,
+    };
+    // <-- for Logo-Devel-Shader
+
     bool verbose = false;
 
     explicit ShaderState(Trophy* trophy):
@@ -117,6 +134,12 @@ struct ShaderState {
             for (int i = 0; i < nLeds; i++) {
                 leds[i] = LED();
             }
+            logoGeometry = {
+                    trophy->logoCenter.x,
+                    trophy->logoCenter.y,
+                    trophy->logoSize.x,
+                    trophy->logoSize.y
+            };
         };
 
     GLsizei alignedTotalSize(Shader mode) {
@@ -127,8 +150,10 @@ struct ShaderState {
                        + sizeof(params)
                        + sizeof(options);
             case Shader::LogoDevel:
-                // size and center of the 2D logo -> 4 floats
-                return baseSize + sizeof(glm::vec4);
+                // vec4 -> size and center of the 2D logo (... just why, again?)
+                return baseSize
+                        + sizeof(glm::vec4)
+                        + sizeof(logoDevelOptions);
             default:
                 return baseSize;
         }
@@ -193,16 +218,6 @@ struct ShaderState {
             uint8_t b = std::rand() % 256;
             set(i, r, g, b);
         }
-    }
-
-    // new for LogoDevel-Shader
-    glm::vec4 collectLogoState() {
-        return {
-            trophy->logoCenter.x,
-            trophy->logoCenter.y,
-            trophy->logoSize.x,
-            trophy->logoSize.y
-        };
     }
 };
 

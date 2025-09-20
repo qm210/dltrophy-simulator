@@ -405,13 +405,15 @@ void TrophyShader::fillStateUniformBuffer() {
                     &state->options
             );
             break;
-        case Shader::LogoDevel: {
-            auto logoState = state->collectLogoState();
+        case Shader::LogoDevel:
             putIntoUniformBuffer(
-                    sizeof(logoState),
-                    &logoState
+                    sizeof(state->logoGeometry),
+                    &state->logoGeometry
             );
-            }
+            putIntoUniformBuffer(
+                    sizeof(state->logoDevelOptions),
+                    &state->logoDevelOptions
+            );
             break;
         default:
             break;

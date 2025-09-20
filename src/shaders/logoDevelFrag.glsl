@@ -35,7 +35,14 @@ layout(std140) uniform LogoStateBuffer {
     RGB ledColor[nLeds];
     vec2 logoCenter;
     vec2 logoSize;
+    int options;
 };
+
+#define hasOption(index) (options & (1 << (8 * index))) != 0
+bool maskOnlyPixels = hasOption(0);
+bool hidePixels = hasOption(1);
+bool hideCrosshair = hasOption(2);
+bool hideOrigin = hasOption(3);
 
 vec2 iResolution = iRect.zw;
 float aspectRatio = iResolution.x / iResolution.y;
@@ -237,7 +244,6 @@ void main() {
     d = min(d, sdBar(uv, halfTail, apex));
     col.rgb = mix(col.rgb, flash, exp(-30.*d) * flickers(iTime, 0.42, 1. - 0.01 * mod(iTime - 10., 50.)));
 
-    bool maskOnlyPixels = false;
     float ledMask = 0.;
     float ledBorder = 0.;
 

@@ -123,6 +123,8 @@ struct Trophy {
         _,159,  _,138,135,  _, 65, 68,  _, 71, 74,  _, 77, 80,  _, 83, 98,  _,101,  _,  _,  _,  _,  _,  _,  _,
         _,  _,137,136,  _, 64, 69,  _, 70, 75,  _, 76, 81,  _, 82, 99,  _,100,  _,  _,  _,  _,  _,  _,  _,  _,
     }};
+    // Looking at the Trophy, one would place the Center X Coordinate where LED 127 is
+    // (which is Logo Index 63, counted from the first LED Index 64 in the Logo)
 
     static glm::vec2 parse_logo_order(int logo_index) {
         auto it = std::find(logo_order.begin(), logo_order.end(), logo_index);

@@ -228,6 +228,12 @@ void SimulatorApp::initializeKeyMap() {
             }
         }
     }, {
+        GLFW_KEY_F7,
+        [this](int mods) {
+            toggle(state->logoDevelOptions.maskOnlyPixels);
+            toggle(state->options.showGrid);
+        }
+    }, {
         GLFW_KEY_F9,
         [this](int mods) {
             printDebug();
@@ -236,11 +242,6 @@ void SimulatorApp::initializeKeyMap() {
         GLFW_KEY_F10,
         [this](int mods) {
              prototyper->toggle();
-        }
-    }, {
-        GLFW_KEY_G,
-        [this](int mods) {
-            toggle(state->options.showGrid);
         }
     }, {
         GLFW_KEY_A,
