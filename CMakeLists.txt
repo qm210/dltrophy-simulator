@@ -136,11 +136,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         MinimalSocket
 )
 
+# explicitly linking the X11 stuff was required under one Ubuntu,
+# while it went fine for some Fedora & Debian distros. Let's try this way.
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    find_package(X11 REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIR})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
+	file(READ "/etc/issue" ETC_ISSUE)
+	string(REGEX MATCH "Ubuntu|Debian" DISTRO ${ETC_ISSUE})
+	if (DISTRO STREQUAL "Ubuntu")
+		find_package(X11 REQUIRED)
+		target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIR})
+		target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
+	endif()
 endif()
+
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         $<$<NOT:$<CONFIG:Debug>>:USE_EMBEDDED_SHADERS>
