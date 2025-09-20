@@ -138,7 +138,7 @@ bool Config::tryReadFile() {
             customFragmentShaderPath = jShaders.value("fragment", "");
             hotReloadShaders = jShaders.value("reload", hotReloadShaders);
             useLogoDevelShader = jShaders.value("useLogoDevelShader", useLogoDevelShader);
-            logoDevelShaderPath = jShaders.value("logoDevelShaderPath", logoDevelShaderPath);
+            logoDevelShaderPath = jShaders.value("logoDevel", logoDevelShaderPath);
         }
 
         udpPort = currentJson->value("udpPort", udpPort);

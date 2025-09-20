@@ -16,6 +16,22 @@ const std::string default_fragment_shader_path = "./shaders/fragment.glsl";
 
 TrophyShader::TrophyShader(Config& config, ShaderState *state)
 : state(state) {
+    bool fragmentOk = loadShaderSources(config);
+    if (!fragmentOk) {
+        // might get generalized, but for now, this is the only distinction.
+        config.useLogoDevelShader = false;
+    }
+    program = createProgram();
+    initializeProgram(config);
+}
+
+TrophyShader::~TrophyShader() {
+    teardown();
+}
+
+bool TrophyShader::loadShaderSources(const Config& config) {
+    // returns whether the desired fragment shader could be loaded.
+
     if (std::filesystem::exists(config.customVertexShaderPath)) {
         vertex.read(config.customVertexShaderPath);
     }
@@ -31,14 +47,15 @@ TrophyShader::TrophyShader(Config& config, ShaderState *state)
     if (config.useLogoDevelShader) {
         try {
             fragment.read(config.logoDevelShaderPath);
-            return;
+            return true;
         } catch (const std::exception& e) {
-            logoDevelModeError = config.logoDevelShaderPath.empty()
-                    ? std::format("No Logo-Devel-Shader defined, check your config!\n{}",
+            logoDevelModeError =
+                    config.logoDevelShaderPath.empty()
+                    ? std::format("No Logo-Devel-Shader defined, check your config! (field \"logoDevel\")\n{}",
                                   std::filesystem::absolute(config.path).string())
                     : std::format("Cannot load Logo-Devel-Shader from {}:\n{}",
                                   config.logoDevelShaderPath, e.what());
-            config.useLogoDevelShader = false;
+            return false;
         }
     }
 
@@ -52,13 +69,7 @@ TrophyShader::TrophyShader(Config& config, ShaderState *state)
         fragment.read(default_fragment_shader_path);
 #endif
     }
-
-    program = createProgram();
-    initializeProgram(config);
-}
-
-TrophyShader::~TrophyShader() {
-    teardown();
+    return true;
 }
 
 void TrophyShader::initializeProgram(const Config& config) {

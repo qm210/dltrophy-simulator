@@ -24,12 +24,13 @@ private:
     ShaderMeta fragment = ShaderMeta(GL_FRAGMENT_SHADER);
     ProgramMeta program;
     ProgramMeta createProgram();
+    bool loadShaderSources(const Config& config);
     void initializeProgram(const Config& config);
     void teardown();
     std::optional<std::time_t> lastReload;
     bool reloadFailed = false;
     Shader currentMode = TrophyView;
-    std::string logoDevelModeError = "";
+    std::string logoDevelModeError;
 
     GLuint vertexArrayObject = 0;
     GLuint vertexBufferObject = 0;
@@ -67,6 +68,7 @@ public:
 
     void reload(const Config& config);
     void mightHotReload(const Config& config);
+    [[nodiscard]]
     const std::pair<std::string, std::string> lastReloadInfo() const;
 
     [[nodiscard]]
