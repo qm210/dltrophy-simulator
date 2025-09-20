@@ -28,6 +28,7 @@ private:
     void teardown();
     std::optional<std::time_t> lastReload;
     bool reloadFailed = false;
+    Shader currentMode = TrophyView;
 
     GLuint vertexArrayObject = 0;
     GLuint vertexBufferObject = 0;
@@ -38,6 +39,7 @@ private:
     GLuint stateBufferId = 0;
     GLuint definitionBufferId = 0;
     void initUniformBuffers();
+    void fillStateUniformBuffer();
 
     FramebufferPingPong feedbackFramebuffers{};
     Framebuffer ledsOnly{};
@@ -68,7 +70,7 @@ public:
 
     [[nodiscard]]
     std::string collectErrorLogs(std::optional<ProgramMeta> program = std::nullopt) const;
-    void assertSuccess(const std::function<void(const std::string&)>& callback) const;
+    bool assertSuccess(const std::function<void(const std::string&)>& callback) const;
 
     // TODO: this can surely be made more elegant, but pls. brain. quiet now.
     Uniform<glm::vec4> iRect = Uniform<glm::vec4>("iRect");

@@ -11,6 +11,7 @@
 #else
 const std::string default_vertex_shader_path = "./shaders/vertex.glsl";
 const std::string default_fragment_shader_path = "./shaders/fragment.glsl";
+const std::string logo_devel_fragment_shader_path = "./shaders/logoDevelFrag.glsl";
 #endif
 
 TrophyShader::TrophyShader(const Config& config, ShaderState *state)
@@ -25,14 +26,17 @@ TrophyShader::TrophyShader(const Config& config, ShaderState *state)
         vertex.read(default_vertex_shader_path);
 #endif
     }
-    if (std::filesystem::exists(config.customFragmentShaderPath)) {
+    if (config.useLogoDevelShader) {
+        fragment.read(logo_devel_fragment_shader_path);
+    }
+    else if (std::filesystem::exists(config.customFragmentShaderPath)) {
         fragment.read(config.customFragmentShaderPath);
     }
     else {
 #ifdef USE_EMBEDDED_SHADERS
         fragment.takeEmbedded(embedded_fragment_shader);
 #else
-        vertex.read(default_fragment_shader_path);
+        fragment.read(default_fragment_shader_path);
 #endif
     }
 
@@ -48,6 +52,9 @@ void TrophyShader::initializeProgram(const Config& config) {
     if (!glIsProgram(program)) {
         std::cerr << "[Shader Program] is not valid, error is \"" << program.error << "\"" << std::endl;
     };
+    currentMode = config.useLogoDevelShader
+            ? Shader::LogoDevel
+            : Shader::TrophyView;
 
     glUseProgram(program);
     iRect.loadLocation(program);
@@ -60,7 +67,7 @@ void TrophyShader::initializeProgram(const Config& config) {
     iMouse.loadLocation(program);
 
     initUniformBuffers();
-    
+
     onRectChange(config.windowSize, config);
 }
 
@@ -178,10 +185,13 @@ std::string TrophyShader::collectErrorLogs(std::optional<ProgramMeta> otherProgr
     return result;
 }
 
-void TrophyShader::assertSuccess(const std::function<void(const std::string &)> &callback) const {
+bool TrophyShader::assertSuccess(const std::function<void(const std::string &)> &callback) const {
     const auto errorLog = collectErrorLogs();
     if (!errorLog.empty()) {
         callback(errorLog);
+        return false;
+    } else {
+        return true;
     }
 }
 
@@ -305,12 +315,16 @@ void TrophyShader::initUniformBuffers() {
     updateLedPositions();
 
     bindingPoint++;
-    blockIndex = glGetUniformBlockIndex(program, "StateBuffer");
+    blockIndex = glGetUniformBlockIndex(program,
+                                        currentMode == Shader::LogoDevel
+                                        ? "LogoStateBuffer"
+                                        : "StateBuffer"
+                                        );
     glUniformBlockBinding(program, blockIndex, bindingPoint);
     glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, stateBufferId);
     glBindBuffer(GL_UNIFORM_BUFFER, stateBufferId);
     glBufferData(GL_UNIFORM_BUFFER,
-                 state->alignedTotalSize(),
+                 state->alignedTotalSize(currentMode),
                  nullptr,
                  GL_DYNAMIC_DRAW);
 
@@ -340,7 +354,7 @@ void TrophyShader::use() {
     iRect.set();
 }
 
-inline void fillStateUniformBuffer(ShaderState* state) {
+void TrophyShader::fillStateUniformBuffer() {
     int offset = 0;
 
     auto putIntoUniformBuffer = [&](size_t size, const void* data) {
@@ -352,14 +366,29 @@ inline void fillStateUniformBuffer(ShaderState* state) {
             state->alignedSizeForLeds(),
             state->leds.data()
     );
-    putIntoUniformBuffer(
-            sizeof(state->params),
-            &state->params
-    );
-    putIntoUniformBuffer(
-            sizeof(state->options),
-            &state->options
-    );
+
+    switch (currentMode) {
+        case Shader::TrophyView:
+            putIntoUniformBuffer(
+                    sizeof(state->params),
+                    &state->params
+            );
+            putIntoUniformBuffer(
+                    sizeof(state->options),
+                    &state->options
+            );
+            break;
+        case Shader::LogoDevel: {
+            auto logoState = state->collectLogoState();
+            putIntoUniformBuffer(
+                    sizeof(logoState),
+                    &logoState
+            );
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 static inline void draw() {
@@ -372,7 +401,7 @@ const int POST_PASS = 2;
 
 void TrophyShader::render() {
     glBindBuffer(GL_UNIFORM_BUFFER, stateBufferId);
-    fillStateUniformBuffer(state);
+    fillStateUniformBuffer();
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     iPass.set(ONLY_LEDS_PASS);

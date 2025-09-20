@@ -17,6 +17,7 @@
 #include <glm/vec4.hpp>
 
 struct Trophy {
+
     static constexpr GLuint N_LEDS_IN_BASE = 64;
     static constexpr GLuint N_LEDS_IN_LOGO = 106;
     static constexpr GLuint N_RGB_LEDS = N_LEDS_IN_BASE + N_LEDS_IN_LOGO;

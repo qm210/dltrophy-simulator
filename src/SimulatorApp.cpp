@@ -219,6 +219,21 @@ void SimulatorApp::initializeKeyMap() {
             toggle(state->verbose);
         }
     }, {
+        GLFW_KEY_F8,
+        [this](int mods) {
+            toggle(config.useLogoDevelShader);
+            TrophyShader* newShader = new TrophyShader(config, state);
+            if (newShader->assertSuccess(showError)) {
+                delete shader;
+                shader = newShader;
+            }
+        }
+    }, {
+        GLFW_KEY_F9,
+        [this](int mods) {
+            printDebug();
+        }
+    }, {
         GLFW_KEY_F10,
         [this](int mods) {
              prototyper->toggle();
@@ -595,4 +610,7 @@ void SimulatorApp::printDebug() const {
                   << ": " << led.toString() << std::endl;
     }
     std::cout << "    Source: " << lastUdpMessage->source << std::endl;
+
+    std::cout << " === iRect  = " << shader->iRect.to_string() << std::endl;
+    std::cout << " === iMouse = " << shader->iMouse.to_string() << std::endl;
 }

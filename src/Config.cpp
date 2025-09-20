@@ -137,6 +137,7 @@ bool Config::tryReadFile() {
             customVertexShaderPath = jShaders.value("vertex", "");
             customFragmentShaderPath = jShaders.value("fragment", "");
             hotReloadShaders = jShaders.value("reload", hotReloadShaders);
+            useLogoDevelShader = jShaders.value("useLogoDevelShader", useLogoDevelShader);
         }
 
         udpPort = currentJson->value("udpPort", udpPort);
@@ -168,7 +169,8 @@ void Config::store(GLFWwindow* window, ShaderState* state) const {
     j["shaders"] = {
        {"vertex", customVertexShaderPath},
        {"fragment", customFragmentShaderPath},
-       {"reload", hotReloadShaders}
+       {"reload", hotReloadShaders},
+       {"useLogoDevelShader", useLogoDevelShader},
     };
     j["udpPort"] = udpPort;
     j["usePrototyper"] = usePrototyper;

@@ -18,6 +18,12 @@
 #include "geometryHelpers.h"
 #include "debug.h"
 
+enum Shader {
+    TrophyView,
+    // the LogoDevel is WIP, i.e. when it is not explicitly referenced, it is not meant.
+    LogoDevel,
+};
+
 struct ShaderOptions {
     // this needs minimum alignment (GLint = 4 bytes), therefore a multiple of 4 of flags.
     // (well, at the end of the std140 layout this could even deviate, but don't rely on that.)
@@ -113,10 +119,19 @@ struct ShaderState {
             }
         };
 
-    GLsizei alignedTotalSize() {
-        return alignedSizeForLeds()
-                + sizeof(params)
-                + sizeof(options);
+    GLsizei alignedTotalSize(Shader mode) {
+        GLsizei baseSize = alignedSizeForLeds();
+        switch (mode) {
+            case Shader::TrophyView:
+                return baseSize
+                       + sizeof(params)
+                       + sizeof(options);
+            case Shader::LogoDevel:
+                // size and center of the 2D logo -> 4 floats
+                return baseSize + sizeof(glm::vec4);
+            default:
+                return baseSize;
+        }
     }
 
     GLsizei alignedSizeForLeds() {
@@ -178,6 +193,16 @@ struct ShaderState {
             uint8_t b = std::rand() % 256;
             set(i, r, g, b);
         }
+    }
+
+    // new for LogoDevel-Shader
+    glm::vec4 collectLogoState() {
+        return {
+            trophy->logoCenter.x,
+            trophy->logoCenter.y,
+            trophy->logoSize.x,
+            trophy->logoSize.y
+        };
     }
 };
 

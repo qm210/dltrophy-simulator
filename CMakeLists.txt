@@ -70,6 +70,7 @@ add_executable(${PROJECT_NAME}
         src/inputHelpers.h
         src/geometryHelpers.h
         src/debug.h
+        src/shaders/embedded.h
 
         src/messages/WebSocketListener.h
         src/messages/UdpListener.h
@@ -91,7 +92,6 @@ add_executable(${PROJECT_NAME}
         src/prototyper/fx/lib/hsv2rgb.cpp
         src/prototyper/fx/lib/colorutils.cpp
         src/prototyper/Prototyper.cpp
-        src/shaders/embedded.h
 )
 
 target_sources(${PROJECT_NAME} PRIVATE

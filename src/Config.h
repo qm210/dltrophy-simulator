@@ -28,6 +28,7 @@ public:
     std::string customVertexShaderPath;
     std::string customFragmentShaderPath;
     bool hotReloadShaders = true;
+    bool useLogoDevelShader = false;
 
     bool usePrototyper = false;
 
