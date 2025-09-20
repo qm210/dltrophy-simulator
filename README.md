@@ -50,14 +50,40 @@ I guess I have to admit that I'm a highly handicapped worst-kind-of-autistic ind
 or any regard for the emotions and demands of wellbeing of anyone, anything that ever existed
 and this is why I allow myself (and yourself!) to also use that spelling of the word "simulator". 
 
-# Building
+# Linux dependencies 
 
 ## Fedora
 Building on Fedora is straight forward, says the drawer of Korkens.
 
-Install Build Dependencies ( assuming fedora 42)
-`sudo dnf install -y libXi-devel libXcursor-devel libXinerama-devel libXrandr-devel libxkbcommon-devel wayland-devel mesa-libGL-devel mesa-libGL gcc-c++ cmake`
-configure make
-`cmake .`
-build
-`make `
+Install Build Dependencies (assuming fedora 42)
+```bash
+sudo dnf install -y libXi-devel libXcursor-devel libXinerama-devel libXrandr-devel libxkbcommon-devel wayland-devel mesa-libGL-devel mesa-libGL gcc-c++ cmake git
+```
+## Debian / Ubuntu
+have a look at the Dockerfile for inspiration
+
+# Generic Linux Build
+
+```bash
+# get trophy-simulator code
+git clone https://github.com/qm210/dltrophy-simulator
+
+# make build directory && enter
+mkdir dltrophy-simulator/build
+cd dltrophy-simulator/build
+
+# Build wayland && x11:
+cmake ../. 
+
+# Build Software, with 10 cores:
+make -j10
+```
+## Disable X11 or Wayland Build
+
+```bash
+# Disable Wayland
+cmake ../. -D GLFW_BUILD_WAYLAND=0
+
+# Disable x11
+cmake ../. -D GLFW_BUILD_X11=0
+```
