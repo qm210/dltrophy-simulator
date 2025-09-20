@@ -10,7 +10,7 @@ include(FetchContent)
 FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
-        GIT_TAG        3.4
+        GIT_TAG        8e15281d34a8b9ee9271ccce38177a3d812456f8
 )
 FetchContent_MakeAvailable(glfw)
 
@@ -115,12 +115,15 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         src/prototyper
         src/prototyper/fx
 )
+
+# this is because Windows has not getopt on its own, other than Linuxes.
+# it is for reading the command line arguments, pretty straightforward.
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_sources(${PROJECT_NAME} PRIVATE
-        thirdparty/freegetopt/getopt.c
+            thirdparty/freegetopt/getopt.c
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
-        thirdparty/freegetopt/
+            thirdparty/freegetopt/
     )
 endif()
 
@@ -133,12 +136,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         MinimalSocket
 )
 
-
+# explicitly linking the X11 stuff was required under one Ubuntu,
+# while it went fine for some Fedora & Debian distros. Let's try this way.
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    find_package(X11 REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIR})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
+	file(READ "/etc/issue" ETC_ISSUE)
+	string(REGEX MATCH "Ubuntu|Debian" DISTRO ${ETC_ISSUE})
+	if (DISTRO STREQUAL "Ubuntu")
+		find_package(X11 REQUIRED)
+		target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIR})
+		target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
+	endif()
 endif()
+
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         $<$<NOT:$<CONFIG:Debug>>:USE_EMBEDDED_SHADERS>
