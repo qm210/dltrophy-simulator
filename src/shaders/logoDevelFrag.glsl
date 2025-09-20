@@ -40,7 +40,7 @@ layout(std140) uniform LogoStateBuffer {
 
 // QM took these as great examples of their kind, might make the logoCenter above superfluid
 vec2 logoCenter = vec2(ledPosition[127].x, ledPosition[131].y);
-float freeScale = 1.4;
+float freeScale = 1.3;
 
 #define hasOption(index) (options & (1 << (8 * index))) != 0
 bool maskOnlyPixels = hasOption(0);
@@ -161,18 +161,6 @@ void main() {
     fragColor.r = 0.3 * exp(-10.*(abs(d - 1.) * fract(-0.3 * iTime)));
     */
     vec3 col = fragColor.rgb;
-    const vec2 cornerTL = vec2(-.5, +.3);
-    const vec2 cornerBL = vec2(-.5, -.3);
-    const vec2 cornerTR = vec2(+.5, +.3);
-    const vec2 cornerBR = vec2(+.5, -.3);
-    // Grüner Böbbel im Ursprung (nur zur Orientierung while devel)
-    if (!hideOrigin) {
-        fragColor.g = float(length(uv) < 0.01)
-            + 0.5 * float(length(uv - cornerTL) < 0.01)
-            + 0.5 * float(length(uv - cornerBL) < 0.01)
-            + 0.5 * float(length(uv - cornerTR) < 0.01)
-            + 0.5 * float(length(uv - cornerBR) < 0.01);
-    }
 
     float slideLoopSec = 4.;
     float slideY = 9. * slideIn(iTime, slideLoopSec, 0.7);
@@ -251,17 +239,20 @@ void main() {
     uv = _uv;
 
     vec3 flash = vec3(
-    0.85 + 0.15 * floor(5.*sin(iTime*0.9)*sin(iTime*4.2-0.328)*sin(iTime*11.423-0.9)),
-    0.65 + 0.35 * floor(9.*sin(iTime*0.73)*sin(iTime*.2-0.73)*sin(iTime*14.302+1.9)),
-    0.9 + 0.1 * floor(13.*sin(iTime*0.29)*sin(iTime*14.2-0.328)*sin(iTime*52.-0.55))
+        0.85 + 0.15 * floor(5.*sin(iTime*0.9)*sin(iTime*4.2-0.328)*sin(iTime*11.423-0.9)),
+        0.65 + 0.35 * floor(9.*sin(iTime*0.73)*sin(iTime*.2-0.73)*sin(iTime*14.302+1.9)),
+        0.9 + 0.1 * floor(13.*sin(iTime*0.29)*sin(iTime*14.2-0.328)*sin(iTime*52.-0.55))
     );
-    flash *= (1. - clamp(dLogo, 0, 1));
+    // flash *= (1. - clamp(dLogo, 0, 1)); // don't want the weird Negative colors
+    float attenuate = (1. - clamp(dLogo, 0, 1));
     d = sdBar(uv, leftEnd, leftReachMax);
     d = min(d, sdBar(uv, triLeft, leftEnd));
-    col.rgb = mix(col.rgb, flash, exp(-30.*d) * flickers(iTime, 0., 1. - 0.01 * mod(iTime, 50.)));
+    col.rgb = mix(col.rgb, flash,
+                  exp(-30.*d) * flickers(iTime, 0., 1. - 0.01 * mod(iTime, 50.)) * attenuate);
     d = sdBar(uv, triRight, rightTail);
     d = min(d, sdBar(uv, halfTail, apex));
-    col.rgb = mix(col.rgb, flash, exp(-30.*d) * flickers(iTime, 0.42, 1. - 0.01 * mod(iTime - 10., 50.)));
+    col.rgb = mix(col.rgb, flash,
+                  exp(-30.*d) * flickers(iTime, 0.42, 1. - 0.01 * mod(iTime - 10., 50.)) * attenuate);
 
     float ledMask = 0.;
     float ledBorder = 0.;
@@ -292,6 +283,22 @@ void main() {
     }
     if (!hidePixels) {
         fragColor.rgb = max(fragColor.rgb, c.xxx * ledBorder);
+    }
+
+    // Grüne Böbbel in Ursprung & Ecken (zur Orientierung halt)
+    const vec2 cornerTL = vec2(-.5, +.3);
+    const vec2 cornerBL = vec2(-.5, -.3);
+    const vec2 cornerTR = vec2(+.5, +.3);
+    const vec2 cornerBR = vec2(+.5, -.3);
+    if (!hideOrigin) {
+        col = fragColor.rgb;
+        col.g = max(col.g, float(length(uv) < 0.01)
+            + 0.5 * float(length(uv - cornerTL) < 0.01)
+            + 0.5 * float(length(uv - cornerBL) < 0.01)
+            + 0.5 * float(length(uv - cornerTR) < 0.01)
+            + 0.5 * float(length(uv - cornerBR) < 0.01)
+        );
+        fragColor.g = col.g;
     }
 
     if (!hideCrosshair) {
