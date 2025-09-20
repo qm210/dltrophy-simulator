@@ -40,7 +40,7 @@ layout(std140) uniform LogoStateBuffer {
 
 // QM took these as great examples of their kind, might make the logoCenter above superfluid
 vec2 logoCenter = vec2(ledPosition[127].x, ledPosition[131].y);
-float freeScale = 1.3;
+const float freeScale = 1.3;
 
 #define hasOption(index) (options & (1 << (8 * index))) != 0
 bool maskOnlyPixels = hasOption(0);
@@ -79,6 +79,23 @@ float sdfCircle(vec2 p, vec2 center, float radius) {
 float sdfMouseCrosshair() {
     vec2 dist = abs(gl_FragCoord.xy - iMouse.xy - c.ww);
     return exp(-5. * min(dist.x, dist.y));
+}
+
+vec3 drawGrid(in vec2 uv) {
+    vec3 col = c.yyy;
+    float thickness = 3.e-3;
+    const float step = 0.1;
+    uv = abs(uv);
+    if (min(uv.x, uv.y) < 1.5 * thickness) {
+        thickness *= 1.5;
+        col.g = 0.8;
+        col.b = 1.;
+    }
+    else if (mod(uv.x, step) < thickness ||
+    mod(uv.y, step) < thickness) {
+        col.g = 0.6;
+    }
+    return col;
 }
 
 float sdTriangleFrame(vec2 p, float w, float h) {
@@ -173,10 +190,10 @@ void main() {
     mat2 rotation = rot2D(-0.32 * iTime);
     mat2 antirotation = rot2D(+0.6 * iTime);
     vec2 rotCenter = vec2(0, -0.03) - rotation * vec2(0.4, 0.);
-    vec2 lineOrigin = antirotation * vec2(-.7, 0.) + rotCenter;
+    vec2 lineOrigin = antirotation * vec2(-.84, 0.) + rotCenter;
     vec2 lineTarget = antirotation * vec2(.3, 0.) + rotCenter;
     // oh yeah and why not scale it, while suppressing it?
-    d = sdLine(uv * suppress, lineOrigin, lineTarget);
+    d = sdLine(uv, lineOrigin, lineTarget);
     // "beam" effect: blur closer to b
     float blur = exp(-3. * length(uv - lineTarget));
     col.r = exp(-(50. - 49.9999995*blur)*d);
@@ -191,17 +208,15 @@ void main() {
     fragColor.rgb = max(fragColor.rgb, col);
 
     // the bright bleu path :) (hint: it's probably an A from deAdline)
-    const vec2 triLeft = vec2(-0.6, -0.32);
-    const vec2 triRight = vec2(0.2, triLeft.y);
-    const vec2 rightTail = vec2(0.52, 0.06);
+    const vec2 triLeft = vec2(-0.39, -0.2);
+    const vec2 triRight = vec2(0.16, triLeft.y);
+    const vec2 rightTail = vec2(0.39, 0.05);
     const vec2 halfTail = (triRight + rightTail) / 2;
-    const vec2 apex = vec2(0, 0.35);
+    const vec2 apex = vec2(0.06, 0.25);
     const vec2 rightOfApex = mix(halfTail, apex, 0.8);
     const vec2 leftOfApex = mix(triLeft, apex, 0.86);
-    const vec2 leftEnd = vec2(-0.72, -0.2);
-    const vec2 leftReachMax = vec2(-0.4, 0.18);
-    const vec2 leftReach = mix(leftEnd, leftReachMax, 0.8);
-
+    const vec2 leftEnd = vec2(-0.48, -0.11);
+    const vec2 leftReach = vec2(-0.26, 0.11);
 
     d = 1000.;
     vec2 a = triLeft, b = triRight;
@@ -244,8 +259,8 @@ void main() {
         0.9 + 0.1 * floor(13.*sin(iTime*0.29)*sin(iTime*14.2-0.328)*sin(iTime*52.-0.55))
     );
     // flash *= (1. - clamp(dLogo, 0, 1)); // don't want the weird Negative colors
-    float attenuate = (1. - clamp(dLogo, 0, 1));
-    d = sdBar(uv, leftEnd, leftReachMax);
+    float attenuate = (1. - 0.5 * clamp(dLogo, 0, 1));
+    d = sdBar(uv, leftEnd, leftReach);
     d = min(d, sdBar(uv, triLeft, leftEnd));
     col.rgb = mix(col.rgb, flash,
                   exp(-30.*d) * flickers(iTime, 0., 1. - 0.01 * mod(iTime, 50.)) * attenuate);
@@ -291,7 +306,7 @@ void main() {
     const vec2 cornerTR = vec2(+.5, +.3);
     const vec2 cornerBR = vec2(+.5, -.3);
     if (!hideOrigin) {
-        col = fragColor.rgb;
+        col = fragColor.rgb + 0.2 * drawGrid(uv);
         col.g = max(col.g, float(length(uv) < 0.01)
             + 0.5 * float(length(uv - cornerTL) < 0.01)
             + 0.5 * float(length(uv - cornerBL) < 0.01)
