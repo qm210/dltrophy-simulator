@@ -249,11 +249,11 @@ float sdSphere(vec3 p, vec3 center, float radius) {
     return length(p - center) - radius;
 }
 
-float sdZCylinder( vec3 p, float ra, float roundness, float h )
+float sdZCylinder(vec3 p, float ra, float h)
 {
-    // "YCylinder" because the Y-Axis is its length axis, see last term:
-    vec2 d = vec2( length(p.xy)-2.0*ra+roundness, abs(p.z) - h );
-    return min(max(d.x,d.y),0.0) + length(max(d,0.0)) - roundness;
+    const float eps = 0.00001;
+    vec2 d = vec2( length(p.xy)-2.0*ra+eps, abs(p.z) - h );
+    return min(max(d.x,d.y),0.0) + length(max(d,0.0)) - eps;
 }
 
 float sdLineSegment(vec3 p, vec3 a, vec3 b) {
@@ -329,7 +329,7 @@ Marched sdScene(vec3 p) {
     p *= pyramidRotation;
     for (int i = 0; i < nLeds; i++) {
         if (i >= 64 && i < 64 + 106) {
-            sd = sdZCylinder(p - ledPosition[i].xyz, ledSize * 1.1, 0.0001, ledSize * 0.5);
+            sd = sdZCylinder(p - ledPosition[i].xyz, ledSize * 0.7, ledSize * 0.3);
             if (updatedHit(hit, sd)) {
                 hit.ledIndex = i;
                 hit.material = LED_FRAME_MATERIAL;
