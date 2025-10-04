@@ -51,6 +51,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(min_sock)
 
+FetchContent_Declare(
+        portaudio
+        GIT_REPOSITORY https://github.com/PortAudio/portaudio.git
+        GIT_TAG v19.7.0
+)
+FetchContent_MakeAvailable(portaudio)
+FetchContent_Declare(
+        libsndfile
+        GIT_REPOSITORY https://github.com/erikd/libsndfile.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(libsndfile)
+
 
 # copy the shader sources into the build folder (relevant for debug)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/shaders
@@ -92,6 +105,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         ${imgui_SOURCE_DIR}
         ${imgui_SOURCE_DIR}/backends
         ${imgui_SOURCE_DIR}/misc/cpp/
+        ${libsndfile_SOURCE_DIR}/include
 
         src/prototyper
         src/prototyper/fx
@@ -115,6 +129,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         nlohmann_json::nlohmann_json
         ixwebsocket
         MinimalSocket
+        portaudio
+        sndfile
 )
 
 # explicitly linking the X11 stuff was required under one Ubuntu,

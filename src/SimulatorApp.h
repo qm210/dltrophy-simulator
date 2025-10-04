@@ -59,6 +59,7 @@ private:
     int currentFrame = 0;
     float currentFps = 0;
     void handleTime();
+    void resetTime();
 
     static const int FPS_SAMPLES = 10;
     float lastFps[FPS_SAMPLES];

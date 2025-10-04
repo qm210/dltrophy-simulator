@@ -1,5 +1,10 @@
 #include "wled.h"
 
+// --> this from lib8tion.cpp, actually
+#define RAND16_SEED  1337
+uint16_t rand16seed = RAND16_SEED;
+// <--
+
 // fastled beatsin: 1:1 replacements to remove the use of fastled sin16()
 // Generates a 16-bit sine wave at a given BPM that oscillates within a given range. see fastled for details.
 uint16_t beatsin88_t(accum88 beats_per_minute_88, uint16_t lowest, uint16_t highest, uint32_t timebase, uint16_t phase_offset)

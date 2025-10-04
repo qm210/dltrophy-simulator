@@ -173,6 +173,12 @@ void SimulatorApp::handleTime() {
     averageFps = currentFrame < FPS_SAMPLES ? currentFps : calcAverageFps();
 }
 
+void SimulatorApp::resetTime() {
+    currentTime = 0;
+    previousTime = 0; // or maybe -1.f/currentFps. But need to check zero then.
+    currentFrame = 0;
+}
+
 float SimulatorApp::calcAverageFps() {
     float sum = 0.;
     for (float lastFp : lastFps) {
@@ -390,8 +396,15 @@ void SimulatorApp::buildControlPanel() {
     auto stop = 0.24f * panelWidth;
     ImGui::Text("Time:");
     ImGui::SameLine(stop);
-    ImGui::Text("%6.2f sec.",
-                shader->iTime.value);
+    ImGui::Text("%6.2f sec.", shader->iTime.value);
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) {
+        resetTime();
+        prototyper->restart();
+    }
+    ImGui::SameLine();
+    ImGui::Text(Prototyper::beatInfo());
+
     ImGui::Text("FPS:");
     ImGui::SameLine(stop);
     ImGui::Text("%6.2f",

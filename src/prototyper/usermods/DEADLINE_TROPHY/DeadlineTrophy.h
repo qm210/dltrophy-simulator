@@ -191,6 +191,7 @@ namespace DeadlineTrophy {
         }
 
         inline float beatNow(float bpm) {
+            // doesnt work with changing bpm
             return bpm/60. * secondNow();
         }
 

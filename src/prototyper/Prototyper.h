@@ -27,6 +27,9 @@
 
 typedef uint16_t (*mode_ptr)();
 
+extern float beat;
+extern float bpm;
+extern float globalTime;
 
 class Prototyper {
 private:
@@ -122,6 +125,9 @@ public:
 
     void restart() const {
         strip.timebase = 0UL - millis();
+        globalTime = 0;
+        beat = 0.;
+        bpm = 0.;
         for (auto &seg : strip._segments) {
             seg.call = 0;
             for (size_t i = 0; i < seg.length(); i++) {
@@ -167,6 +173,13 @@ public:
         }
 
         return leds;
+    }
+
+    [[nodiscard]]
+    static const char* beatInfo() {
+        static char buffer[24];
+        sprintf(buffer, "B=%3.2f, BPM=%.2f\n", beat, bpm);
+        return buffer;
     }
 
 private:

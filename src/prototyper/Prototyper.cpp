@@ -9,3 +9,7 @@
 #include "FX_DEADLINE_TROPHY.h"
 
 mode_ptr Prototyper::_mode = mode_DeadlineTrophy;
+
+float beat = 0.;
+float bpm = 0.;
+float globalTime = DeadlineTrophy::FxHelpers::secondNow();
