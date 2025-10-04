@@ -61,36 +61,17 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/shaders
 add_executable(${PROJECT_NAME}
         src/main.cpp
         src/SimulatorApp.cpp
-        src/SimulatorApp.h
         src/TrophyShader.cpp
-        src/TrophyShader.h
         src/Config.cpp
-        src/Config.h
-        src/Trophy.h
-        src/inputHelpers.h
-        src/geometryHelpers.h
-        src/debug.h
-        src/shaders/embedded.h
 
-        src/messages/WebSocketListener.h
-        src/messages/UdpListener.h
-        src/messages/UdpInterpreter.h
-        src/messages/timeFormat.h
-        src/monitor/PerformanceMonitor.h
-        src/monitor/Observables.h
-
-        src/prototyper/Prototyper.h
-        src/prototyper/fx/FX.h
-        src/prototyper/usermods/DEADLINE_TROPHY/DeadlineTrophy.cpp
         src/prototyper/fx/wled/shim.cpp
         src/prototyper/fx/wled/wled_math.cpp
-        src/prototyper/fx/wled/const.h
-        src/prototyper/fx/lib/pixeltypes.h
-        src/prototyper/fx/lib/lib8tion.h
-        src/prototyper/fx/lib/hsv2rgb.h
-        src/prototyper/fx/lib/fastled_defines.h
+        src/prototyper/fx/wled/util.cpp
         src/prototyper/fx/lib/hsv2rgb.cpp
         src/prototyper/fx/lib/colorutils.cpp
+        src/prototyper/usermods/DEADLINE_TROPHY/DeadlineTrophy.cpp
+        src/prototyper/usermods/DEADLINE_TROPHY/DeadlineTrophyAlgebra.cpp
+        src/prototyper/usermods/DEADLINE_TROPHY/DeadlineTrophyHelpers.cpp
         src/prototyper/Prototyper.cpp
 )
 

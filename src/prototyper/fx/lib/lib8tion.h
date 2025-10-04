@@ -75,3 +75,45 @@ LIB8STATIC uint16_t lerp16by16( uint16_t a, uint16_t b, fract16 frac)
     }
     return result;
 }
+
+LIB8STATIC uint8_t map8( uint8_t in, uint8_t rangeStart, uint8_t rangeEnd)
+{
+    uint8_t rangeWidth = rangeEnd - rangeStart;
+    uint8_t out = scale8( in, rangeWidth);
+    out += rangeStart;
+    return out;
+}
+
+unsigned long millis();
+#define GET_MILLIS millis
+
+LIB8STATIC uint16_t beat88( accum88 beats_per_minute_88, uint32_t timebase = 0)
+{
+    // BPM is 'beats per minute', or 'beats per 60000ms'.
+    // To avoid using the (slower) division operator, we
+    // want to convert 'beats per 60000ms' to 'beats per 65536ms',
+    // and then use a simple, fast bit-shift to divide by 65536.
+    //
+    // The ratio 65536:60000 is 279.620266667:256; we'll call it 280:256.
+    // The conversion is accurate to about 0.05%, more or less,
+    // e.g. if you ask for "120 BPM", you'll get about "119.93".
+    return (((GET_MILLIS()) - timebase) * beats_per_minute_88 * 280) >> 16;
+}
+
+/// Generates a 16-bit "sawtooth" wave at a given BPM
+/// @param beats_per_minute the frequency of the wave, in decimal
+/// @param timebase the time offset of the wave from the millis() timer
+LIB8STATIC uint16_t beat16( accum88 beats_per_minute, uint32_t timebase = 0)
+{
+    // Convert simple 8-bit BPM's to full Q8.8 accum88's if needed
+    if( beats_per_minute < 256) beats_per_minute <<= 8;
+    return beat88(beats_per_minute, timebase);
+}
+
+/// Generates an 8-bit "sawtooth" wave at a given BPM
+/// @param beats_per_minute the frequency of the wave, in decimal
+/// @param timebase the time offset of the wave from the millis() timer
+LIB8STATIC uint8_t beat8( accum88 beats_per_minute, uint32_t timebase = 0)
+{
+    return beat16( beats_per_minute, timebase) >> 8;
+}

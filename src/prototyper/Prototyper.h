@@ -120,7 +120,7 @@ public:
         }
     }
 
-    void restart() {
+    void restart() const {
         strip.timebase = 0UL - millis();
         for (auto &seg : strip._segments) {
             seg.call = 0;
@@ -130,8 +130,8 @@ public:
         }
     }
 
+    [[nodiscard]]
     unsigned long millis() const {
-        // Note: being an unsigned long, this overflows every 49 days, but so does it on the device
         auto elapsed =
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - startedAt

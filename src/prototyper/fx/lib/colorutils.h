@@ -681,3 +681,37 @@ public:
     }
 
 };
+
+
+/// Color interpolation options for palette
+typedef enum {
+    NOBLEND=0,            ///< No interpolation between palette entries
+    LINEARBLEND=1,        ///< Linear interpolation between palette entries, with wrap-around from end to the beginning again
+    LINEARBLEND_NOWRAP=2  ///< Linear interpolation between palette entries, but no wrap-around
+} TBlendType;
+
+/// Get a color from a palette.
+/// These are the main functions for getting and using palette colors. Regardless
+/// of the number of entries in the base palette, this function will interpolate
+/// between entries to turn the discrete colors into a smooth gradient.
+/// @param pal the palette to retrieve the color from
+/// @param index the position in the palette to retrieve the color for (0-255)
+/// @param brightness optional brightness value to scale the resulting color
+/// @param blendType whether to take the palette entries directly (NOBLEND)
+/// or blend linearly between palette entries (LINEARBLEND)
+CRGB ColorFromPalette( const CRGBPalette16& pal,
+                       uint8_t index,
+                       uint8_t brightness=255,
+                       TBlendType blendType=LINEARBLEND);
+
+/// @copydoc ColorFromPalette(const CRGBPalette16&, uint8_t, uint8_t, TBlendType)
+CRGB ColorFromPalette( const TProgmemRGBPalette16& pal,
+                       uint8_t index,
+                       uint8_t brightness=255,
+                       TBlendType blendType=LINEARBLEND);
+
+/// @copydoc ColorFromPalette(const CRGBPalette16&, uint8_t, uint8_t, TBlendType)
+CHSV ColorFromPalette( const CHSVPalette16& pal,
+                       uint8_t index,
+                       uint8_t brightness=255,
+                       TBlendType blendType=LINEARBLEND);

@@ -17,7 +17,7 @@
 
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
-    #include <windows.h>
+#include <windows.h>
 #endif
 
 
@@ -221,7 +221,7 @@ void SimulatorApp::initializeKeyMap() {
         GLFW_KEY_F8,
         [this](int mods) {
             toggle(config.useLogoDevelShader);
-            TrophyShader* newShader = new TrophyShader(config, state);
+            auto newShader = new TrophyShader(config, state);
             if (newShader->assertSuccess(showError)) {
                 delete shader;
                 shader = newShader;

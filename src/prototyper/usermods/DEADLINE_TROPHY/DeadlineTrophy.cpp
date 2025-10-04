@@ -37,7 +37,7 @@ namespace DeadlineTrophy {
 
     void overwriteConfig()
     {
-        // Usermods usually only care about their own stuff, but:
+        // Usermods usually only care about their own stuff, but then again:
         // "You're remembered for the rules you break" - Stockton Rush
         DEBUG_PRINTLN(F("[USE_DEADLINE_CONFIG] Overwrite config by Deadline Trophy hard-coded values."));
 
@@ -75,9 +75,11 @@ namespace DeadlineTrophy {
             PIN_FLOOR_SPOT
         ));
 
+        // QM: changing gamma did not survive re-flashing (??), so fix it.
+        // for the compo, it should be fixed anyway (and communicated before!)
         gammaCorrectBri = false;
         gammaCorrectCol = true;
-        gammaCorrectVal = 2.8;
+        gammaCorrectVal = 1.2; // <-- messy suggested 1.0, default is 2.8
         NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal);
 
         #ifdef DEADLINE_INIT_BRIGHTNESS
@@ -87,10 +89,6 @@ namespace DeadlineTrophy {
             briS = 96;
             turnOnAtBoot = true;
         #endif
-
-        transitionDelayDefault = 100;
-        transitionDelay = transitionDelayDefault;
-        blendingStyle = 0;
     }
 
     const char* segmentName[] = {
@@ -114,11 +112,17 @@ namespace DeadlineTrophy {
 
     static std::array<Coord, N_LEDS_LOGO> logoCoordinates_;
     static bool logoInitialized = false;
+    static std::array<Coord, N_LEDS_BASE> baseCoordinates_;
+    static bool baseInitialized = false;
 
     std::array<Coord, N_LEDS_LOGO>& logoCoordinates() {
         if (logoInitialized) {
             return logoCoordinates_;
         }
+        float ds = 1. / static_cast<float>(logoH - 1);
+        float x0 = 0, y0 = 0;
+        const uint8_t ledWithCenterX = 126;
+        const uint8_t ledWithCenterY = 87;
         for (uint8_t x = 0; x < logoW; ++x)
         for (uint8_t y = 0; y < logoH; ++y) {
             uint8_t ledIndex = mappingTable[x + logoW * y];
@@ -126,9 +130,79 @@ namespace DeadlineTrophy {
             if (ledIndex > N_LEDS_TOTAL) {
                 continue;
             }
-            logoCoordinates_[ledIndexInLogo] = {x, y};
+            Coord coord = {
+                x,
+                y,
+                {
+                    +static_cast<float>(x) * ds,
+                    -static_cast<float>(y) * ds,
+                },
+                ledIndexInLogo
+            };
+            logoCoordinates_[ledIndexInLogo] = coord;
+            if (ledIndex == ledWithCenterX) {
+                x0 = -coord.uv.x;
+            }
+            if (ledIndex == ledWithCenterY) {
+                y0 = -coord.uv.y;
+            }
         }
+        for (uint8_t i = 0; i < N_LEDS_LOGO; i++) {
+            logoCoordinates_[i].uv.shift(x0, y0);
+        }
+        Logo::initConstants(logoCoordinates_, ds);
         logoInitialized = true;
         return logoCoordinates_;
-    };
+    }
+
+    std::array<Coord, N_LEDS_BASE>& baseCoordinates() {
+        if (baseInitialized) {
+            return baseCoordinates_;
+        }
+        float ds = 1. / static_cast<float>(baseSize - 1);
+        for (uint8_t x = 0; x < baseSize; ++x)
+        for (uint8_t y = 0; y < baseSize; ++y) {
+            uint8_t ledIndex = mappingTable[x + logoW * (y + logoH)];
+            if (ledIndex > N_LEDS_TOTAL) {
+                continue;
+            }
+            baseCoordinates_[ledIndex] = {
+                x,
+                y,
+                {
+                    static_cast<float>(x) * ds - 0.5f,
+                    -(static_cast<float>(y) * ds - 0.5f),
+                },
+                ledIndex,
+            };
+        }
+        baseInitialized = true;
+        return baseCoordinates_;
+    }
+
+    namespace Logo {
+        float unit;
+        Vec2 xUnit{};
+        Vec2 yUnit{};
+        Vec2 tiltLeft{};
+        Vec2 tiltRight{};
+
+        void initConstants(const std::array<Coord, N_LEDS_LOGO>& coords, float unitSize) {
+            // will be called by the logoCoordinates() initialization
+            // -> i.e. cannot use before the first logoCoordinates() call, but that should do it
+            unit = unitSize;
+            xUnit = { unitSize, 0 };
+            yUnit = { 0, unitSize };
+
+            const uint8_t ledForRightTiltBottom = 161 - N_LEDS_BASE;
+            const uint8_t ledForRightTiltTop = 169 - N_LEDS_BASE;
+            const uint8_t ledForLeftTiltBottom = 104 - N_LEDS_BASE;
+            const uint8_t ledForLeftTiltTop = 120 - N_LEDS_BASE;
+            tiltLeft = coords[ledForLeftTiltTop].uv - coords[ledForLeftTiltBottom].uv;
+            tiltLeft *= unit / tiltLeft.y;
+            tiltRight = coords[ledForRightTiltTop].uv - coords[ledForRightTiltBottom].uv;
+            tiltRight *= unit / tiltRight.y;
+        }
+
+    }
 }

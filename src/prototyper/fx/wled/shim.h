@@ -17,6 +17,33 @@
 #define DEG_TO_RAD 0.017453292519943295769236907684886
 #define RAD_TO_DEG 57.295779513082320876798154814105
 #define EULER 2.718281828459045235360287471352
+
+#define MAXFLOAT	3.40282347e+38F
+
+#define M_E		2.7182818284590452354
+#define M_LOG2E		1.4426950408889634074
+#define M_LOG10E	0.43429448190325182765
+// #define M_LN2		_M_LN2
+#define M_LN10		2.30258509299404568402
+#define M_PI		3.14159265358979323846
+#define M_PI_2		1.57079632679489661923
+#define M_PI_4		0.78539816339744830962
+#define M_1_PI		0.31830988618379067154
+#define M_2_PI		0.63661977236758134308
+#define M_2_SQRTPI	1.12837916709551257390
+#define M_SQRT2		1.41421356237309504880
+#define M_SQRT1_2	0.70710678118654752440
+
+#define M_TWOPI         (M_PI * 2.0)
+#define M_3PI_4		2.3561944901923448370E0
+#define M_SQRTPI        1.77245385090551602792981
+#define M_LN2LO         1.9082149292705877000E-10
+#define M_LN2HI         6.9314718036912381649E-1
+#define M_SQRT3	1.73205080756887719000
+#define M_IVLN10        0.43429448190325182765 /* 1 / log(10) */
+#define M_LOG2_E        _M_LN2
+#define M_INVLN2        1.4426950408889633870E0  /* 1 / log(2) */
+
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 #define radians(deg) ((deg)*DEG_TO_RAD)
 #define degrees(rad) ((rad)*RAD_TO_DEG)
@@ -32,6 +59,8 @@ uint32_t random(uint32_t upperlimit);
 int32_t random(int32_t lowerlimit, int32_t upperlimit);
 
 typedef uint8_t byte;
+
+unsigned long millis();
 
 #define F(x) x
 #define PROGMEM
@@ -99,7 +128,12 @@ struct Segment {
     uint8_t palette;
     uint8_t speed;
     uint8_t intensity;
-    uint8_t custom1, custom2;
+    uint8_t custom1;
+    uint8_t custom2;
+    uint8_t custom3; // is actually only 5-bit because packed with options1..3
+    bool option1;
+    bool option2;
+    bool option3;
     uint8_t blendMode;
 
     mutable unsigned long next_time;

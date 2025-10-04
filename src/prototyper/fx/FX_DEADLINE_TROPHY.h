@@ -3,237 +3,336 @@
 #include "FX.h"
 #include "../usermods/DEADLINE_TROPHY/DeadlineTrophy.h"
 
- ///////////////////////////////////////
- // DEV INFO: cf. DEV INFO in FX.cpp! //
- ///////////////////////////////////////
-
 extern uint16_t mode_static(void);
 
- //////////////////////////
- //  Deadline Trophy FX  //
- //////////////////////////
+//////////////////////////////////////////////////////////
+//  Deadline Trophy FX
+//////////////////////////////////////////////////////////
+// There's a lot of useful stuff in
+// FX.cpp -> see the DEV INFO, also, other FX for "inspiration" :)
+// wled_math.cpp
+// util.cpp
+// -- you can also reinvent the wheel.
+// I have never tested how efficient we really _HAVE_ to be,
+// thus all the helper functions. ..qm
+//////////////////////////////////////////////////////////
+//
+// Notes:
+// - the if (...SEGMENT) { ... } is due to "this FX will be evaluated for every segment on its own"
+//   remember, that you also have to set it for each segment to be actually active.
+// - for "state" variables, there are two uint8_t SEGMENT.aux0 and SEGMENT.aux1,
+//   but you can also declare any variable "static" to be more flexible (QM figures that makes sense here)
+// - the EVERY_NTH_CALL(n) { ... } helper is great for debugging.
 
-
-const int DEBUG_LOG_EVERY_N_CALLS = 0; // for printing debug output every ... steps (0 = no debug out)
-
-#define IS_DEBUG_STEP (DEBUG_LOG_EVERY_N_CALLS > 0 && (SEGENV.call % DEBUG_LOG_EVERY_N_CALLS) == 0)
-
-const size_t nOuterLeft = 10;
-const size_t nLeft = 35;
-const size_t nBottom = 36;
-const size_t nUpperRight = 17;
-const size_t nOuterRight = 27;
-
-// the bars in the Logo
-const int barOuterLeft[nOuterLeft] = {
-    161, 162, 163, 164, 165, 166, 167, 168, 169,
-    160
-};
-const int barLeft[nLeft] = {
-    156, 155, 154, 153, 152, 151, 150, 149,
-    140, 141, 142, 143, 144, 145, 146, 147, 148,
-    133, 132, 131, 130, 129, 128, 127, 126
-};
-const int barBottom[nBottom] = {
-    137, 136, 64, 69, 79, 70, 75, 76, 81, 82, 99, 100,
-    159, 138, 135, 65, 68, 71, 74, 77, 80, 83, 98, 101,
-    158, 139, 134, 66, 67, 72, 73, 78, 79, 84, 97, 102
-};
-const int barUpperRight[nUpperRight] = {
-    111, 116, 117, 122, 123, 125,
-    110, 112, 115, 118, 121, 124,
-    109, 113, 114, 119, 120
-};
-const int barOuterRight[nOuterRight] = {
-    85, 86, 87, 88, 89, 90,
-    96, 95, 94, 93, 92, 91,
-    103, 104, 105, 106, 107, 108
-};
-
-const size_t nBars = 5;
-const int nInBar[] = {
-    nOuterLeft,
-    nLeft,
-    nBottom,
-    nUpperRight,
-    nOuterRight
-};
-const int* indexBars[] = {
-    barOuterLeft,
-    barLeft,
-    barBottom,
-    barUpperRight,
-    barOuterRight
-};
-
-int hue[nBars] = {0};
-int sat[nBars] = {0};
-int val[nBars] = {0};
-float line_direction = 0.;
-
-const int hueSpread = 4.;
-const int valSpread = 2.;
-const float satDecay = 0.5;
-const float satSpawnChance = 0.001;
-
-using DeadlineTrophy::logoW;
-using DeadlineTrophy::logoH;
-using DeadlineTrophy::baseSize;
-
-// could do: Umrechnungsfunktionen in DeadlineTrophy.h schieben.
-inline void setPixel(size_t segmentIndex, int x, int y, uint32_t color) {
-    if (strip.getCurrSegmentId() != segmentIndex) {
-        return;
+inline float bpm(float time) {
+    // just taken stumpfly out of bitwig
+    const float t1 = 33.951;
+    const float t12 = 41.971;
+    const float t2 = 68.524;
+    const float t23 = 72.454;
+    const float t3 = 98.945;
+    const float t34 = 102.733;
+    const float bpm1 = 113.10;
+    const float bpm2 = 126.54;
+    const float bpm3 = 117.78;
+    const float bpm4 = 136.10;
+    if (time < t1) {
+        return bpm1;
+    } else if (time < t12) {
+        return bpm1 + (bpm2 - bpm1) * (time - t1) / (t12 - t1);
+    } else if (time < t2) {
+        return bpm2;
+    } else if (time < t23) {
+        return bpm2 + (bpm3 - bpm2) * (time - t2) / (t23 - t2);
+    } else if (time < t3) {
+        return bpm3;
+    } else if (time < t34) {
+        return bpm3 + (bpm4 - bpm3) * (time - t3) / (t34 - t3);
+    } else {
+        return bpm4;
     }
-    color = color & 0x00FFFFFF; // <-- again: remove white. we don't have.
-    SEGMENT.setPixelColorXY(x, y, color);
 }
 
-void setBase(size_t x, size_t y, uint32_t color) {
-    if (x >= baseSize || y >= baseSize) {
-        return;
-    }
-    setPixel(0, x, y, color);
-}
-
-void setLogo(size_t x, size_t y, uint32_t color) {
-    if (x >= logoW || y >= logoH) {
-        return;
-    }
-    // TODO: 30°-Drehung
-    // TODO: sinnieren über floatzahlige Koordinaten - evtl sinnvoll, evtl wumpe
-    setPixel(1, x, y, color);
-}
-
-void setBack(uint32_t color) {
-    setPixel(2, baseSize, logoH, color);
-}
-
-void setFloor(uint32_t color) {
-    setPixel(3, baseSize, logoH + 1, color);
-}
-
-void setBaseHSV(size_t x, size_t y, CHSV color) { setBase(x, y, uint32_t(CRGB(color))); }
-void setLogoHSV(size_t x, size_t y, CHSV color) { setLogo(x, y, uint32_t(CRGB(color))); }
-
-#define IS_BASE_SEGMENT (strip.getCurrSegmentId() == 0)
-#define IS_LOGO_SEGMENT (strip.getCurrSegmentId() == 1)
-
-const int baseX0[4] = {17, 16, 0, 1};
-const int baseY0[4] = {1, 17, 16, 0};
-const int baseDX[4] = {0, -1, 0, +1};
-const int baseDY[4] = {+1, 0, -1, 0};
-
-uint32_t float_hsv(float hue, float sat, float val) {
-    // parameters in [0, 255] but as float
-    uint32_t color = uint32_t(CRGB(CHSV(
-        static_cast<uint8_t>(hue),
-        static_cast<uint8_t>(sat),
-        static_cast<uint8_t>(val)
-    )));
-    // remove the specific "white" that might be in the color (or shouldn't we?)
-    return color & 0x00FFFFFF;
-}
+struct Spark {
+    DeadlineTrophy::Vec2 pos;
+    DeadlineTrophy::Vec2 vel;
+    float size;
+};
 
 uint16_t mode_DeadlineTrophy(void) {
-    // TODO: find a way to deal with audio input,
-    //  and the AudioReactive Usermod in the simulator
-    //  (maybe pass through our Usermod? is that dumbidumb?)
-    /*
-    um_data_t *um_data;
-    if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-        // add support for no audio
-        um_data = simulateSound(SEGMENT.soundSim);
-    }
-    uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-    */
-
-    size_t i, x, y;
-    uint32_t col = SEGCOLOR(0);
-    CHSV color = rgb2hsv_approximate(CRGB(col));
+    using namespace DeadlineTrophy;
+    using namespace DeadlineTrophy::FxHelpers;
+    CRGB segcolor0 = CRGB(SEGCOLOR(0));
+    CHSV color = rgb2hsv_approximate(segcolor0);
     CHSV color_(color);
+    float hue = static_cast<float>(color.hue);
+
+    static float beat = 0.;
+    static float time = 0.;
+    float elapsed = secondNow() - time;
+    beat += bpm(time)/60. * elapsed;
+    time += elapsed;
+
+    float fractBeat = fmodf(beat, 1.);
+    float halfBeat = floor(beat * 2.) * 0.5;
 
     if (SEGENV.call == 0) {
-        DEBUG_PRINTF("[DEADLINE_TROPHY] FX was called, now initialized for segment %d (%s) :)\n", strip.getCurrSegmentId(), SEGMENT.name);
+        // DEBUG_PRINTF("[DEADLINE_TROPHY] FX was called, now initialized for segment %d (%s) :)\n", strip.getCurrSegmentId(), SEGMENT.name);
         SEGMENT.fill(BLACK);
-
-        line_direction = radians(random(0, 360));
+        // we use SEGENV.aux0 as a internal store for the random-flashes, but for no particular reason - stop me if you care
+        SEGMENT.aux0 = 0;
     }
 
-    if (IS_DEBUG_STEP) {
-        DEBUG_PRINTF("[QM_DEBUG] Segment %d, color %d (rgb %d, %d, %d, hsv %d, %d, %d)\n",
-            strip.getCurrSegmentId(), col, R(col), G(col), B(col), color.hue, color.sat, color.val
-        );
+    // Idea is, that every 4 beats random numbers are drawn, then maybe some flashing effect shown.
+    // (this demonstrates random numbers and how to use the palette).
+    static float randomTakenAtBeat = 0.;
+    CRGB lastRandomColor;
+    if (beat > randomTakenAtBeat + 4.) {
+        SEGMENT.aux0 = hw_random8();
+        randomTakenAtBeat = floor_t(beat);
+        lastRandomColor = ColorFromPalette(SEGPALETTE, hw_random8(), 255, LINEARBLEND_NOWRAP);
     }
+
+    static Vec2 triangleLeft = Logo::coord(138).uv;
+    static Vec2 triangleRight = Logo::coord(103).uv;
 
     if (IS_LOGO_SEGMENT) {
-        // circling piece of shit
-        float phi = TWO_PI * fmod_t(0.0005 * strip.now, 1.);
+        using namespace Logo;
 
-        float center_x = (0.6 + 0.2 * sin_t(phi)) * logoW;
-        float center_y = (0.5 + 0.2 * cos_t(phi)) * logoH;
-        const float size = 13.;
+        // QM: that width is useful for a point with exp(-r*r/w/w), values go from [1/8..1]
+        // float width = exp2f((static_cast<float>(SEGMENT.intensity) - 192.) / 64.);
+        // mapping 0..255 to [1/4 .. 4] with centered 128 = 1:
+        float k = exp2f((static_cast<float>(SEGMENT.intensity) - 128.) / 32.);
+        static float k_factor = 1.;
+        // custom3 is only 5bit (0..31)
+        float w = exp2f((static_cast<float>(SEGMENT.custom3) - 16.) / 8.);
 
-        for (const auto& coord : DeadlineTrophy::logoCoordinates()) {
-            x = coord.x;
-            y = coord.y;
-
-            //just a line sweep
-            center_x = fmod_t(0.0005 * (strip.now % 2000), 1.) * (logoW + 2. * size) - size;
-            center_x = logoW - center_x;
-
-            float dist_x = float(x) - center_x;
-            float dist_y = 0.;
-            float intensity = exp(- (dist_x*dist_x)/size - (dist_y*dist_y)/size);
-
-            intensity = dist_x > 0 ? exp(-dist_x / size) : 0.;
-            color.hue = color_.hue - 90. * intensity;
-            color.sat = 255; // color_.sat * intensity;
-            // some annoying blinking, for now.
-            color.val = static_cast<uint8_t>(255.f * exp(-0.003 * (strip.now % 2000)));
-
-            setLogoHSV(x, y, color);
+        float d;
+        CHSV lineColor;
+        float lineY = triangleLeft.y - unit;
+        if (beat < 18.) {
+            if (beat < 1.5) {
+                lineColor = CHSV(230, 200, uint8_t(170. * beat / 1.5));
+            } else {
+                lineColor = CHSV(uint8_t(230 - (halfBeat - 3.) / (8. - 3.)), 200, uint8_t(170. * expf(-(beat - 1.5))));
+                lineY += (halfBeat - 3.);
+            }
         }
+
+        static std::vector<Spark> sparks;
+        static float sparkedAtBeat = 4.;
+
+        for (auto& spark : sparks) {
+            spark.pos += spark.vel * elapsed;
+        }
+        if (beat > 4. && beat < 18. && beat - sparkedAtBeat > 0.5) {
+            float rand_x = 0.005 * float(random(-20, 20));
+            float rand_y = -0.3 + 0.02 * float(random(20));
+            sparks.push_back({
+                { rand_x, rand_y },
+                { 0.2f * rand_x, -unit },
+                0.1f
+            });
+            sparkedAtBeat = beat;
+            // recycle them later
+        }
+
+        for (const auto& coord : logoCoordinates()) {
+            if (beat < 18.) {
+                d = coord.sdLine({-10., lineY}, {10., lineY});
+                color = mixHsv(CHSV(0, 0, 0), lineColor, exp(-3. * d));
+
+                for (auto& spark : sparks) {
+                    d = coord.gaussAt(spark.pos, spark.size);
+                    color = mixHsv(color, CHSV(98, 255, 255), d);
+                }
+            }
+            else if (beat < 21.) {
+                // TODO:
+                float mixB = (beat - 18.) / 3.;
+                color = CHSV(
+                        98,
+                        mix8(255, 0, mixB),
+                        mix8(255, 140, mixB)
+                );
+            }
+            else if (beat < 36.) {
+                static CHSV beatColor = CHSV(210, 128, 200);
+                sparkedAtBeat = beat;
+                if (beat >= sparkedAtBeat + 1.) {
+                    beatColor = CHSV(
+                            hw_random8(160, 230),
+                            hw_random8(128, 255),
+                            hw_random8(200, 255)
+                    );
+                    sparkedAtBeat = beat;
+                }
+                color = mixHsv(color, beatColor, fractBeat);
+            }
+            setLogo(coord.x, coord.y, color);
+
+//
+//            float d = coord.uv.length();
+//            d = sin_t(M_TWOPI * (d * k * k_factor + w * beat));
+//            d *= d;
+//            d = 0.02 / d;
+//
+//            // nach Polarwinkel unterdrücken...
+//            float theta = coord.uv.polarAngleFrom({0, 0}, 0.25 * beat * M_TWOPI);
+//            // aber reicht alle 8 Takte mal.
+//            float every8Beats = fmodf(beat, 8.);
+//            float gaussCurveExponent = (every8Beats - 6.) / 2;
+//            float swirlIntensity = exp(-sq(gaussCurveExponent));
+//            d *= exp(-theta * swirlIntensity);
+//
+//            // at some other time, make k large and suppress points
+//            gaussCurveExponent = (fmodf(beat, 16.) - 9.) / 2.4;
+//            k_factor = 1. + exp(-sq(gaussCurveExponent));
+//            d = powf(d, sq(k_factor));
+//
+//            color.hue = static_cast<uint8_t>(hue - 3. * theta);
+//            color.sat = color_.sat;
+//            color.val = static_cast<uint8_t>(50. * clip(d));
+//
+//            // as an example of controlling the parameters. draws a gauss curve / circle around teh given point, white.
+//            /*
+//            d = 255. * coord.gaussAt(center, 0.5 * k, w - 1.);
+//            color.val = max(color.val, static_cast<uint8_t>(d));
+//            color.sat = min(color.sat, static_cast<uint8_t>(255. - d));
+//            */
+//
+//            // draw one triangle to show usage of left/right tilt vectors
+//            CHSV triangleColor = CHSV(230, 200, 170);
+//            Vec2 pointForLeft = triangleLeft + (-8.f + 24.f * perlin1D(10. * beat)) * Logo::xUnit;
+//            d = coord.sdLine(pointForLeft - 10. * Logo::tiltRight, pointForLeft + 10. * Logo::tiltRight);
+//            color = mixHsv(color, triangleColor, exp(-6. * d));
+//            Vec2 pointForRight = triangleRight + (3.f - 7.f * perlin1D(10. * beat + 4.)) * Logo::xUnit;
+//            d = coord.sdLine(pointForRight - 10. * Logo::tiltLeft, pointForRight + 10. * Logo::tiltLeft);
+//            color = mixHsv(color, triangleColor, exp(-7. * d));
+//            float bottomLineHeight = triangleLeft.y + Logo::unit * (-1.f + 5.f * perlin1D(6. * beat + 100.));
+//            d = coord.sdLine({-10., bottomLineHeight}, {10., bottomLineHeight});
+//            color = mixHsv(color, triangleColor, exp(-8. * d));
+
+
+        }
+
+        // now, about these random draws we did somewhere above
+        /*
+        if (SEGMENT.aux0 > 150) {
+            // these are just two exp decays one eighth of a beat apart
+            float lastExpPeakAt = fractBeat < 0.125 ? 0. : 0.125;
+            float exponent = fractBeat < 0.125 ? 5. : 1.4;
+            float flashIntensity =
+                exp(-exponent * (fractBeat-lastExpPeakAt) * static_cast<float>(fractBeat >= lastExpPeakAt));
+            if (fractBeat < 0.125) {
+                fillLogoArray(Logo::InnerTriangle.data(), Logo::InnerTriangle.size(),
+                              RGBW32(200, 255, 50, 0), flashIntensity);
+            } else {
+                fillLogoArray(Logo::OuterTriangle.data(), Logo::OuterTriangle.size(),
+                              RGBW32(210, 110, 10, 0), flashIntensity);
+            }
+        }
+        */
+
+        /*
+        static uint32_t contourColor = uint32_t(CRGB(30, 40, 120));
+        int contourIndex = static_cast<int>(beat * 8.) % Contour.size();
+        // some contour frames
+        if (contourIndex == 0) {
+            fillLogoArray(Contour.data(), Contour.size(), contourColor, 0.01);
+        } else if (contourIndex == 1) {
+            fillLogoArray(MiddleTriangle.data(), MiddleTriangle.size(), YELLOW, 0.003);
+            fillLogoArray(LeftmostBar.data(), LeftmostBar.size(), CYAN, 0.004);
+        } else if (contourIndex == 2) {
+            fillLogoArray(InnerTriangle.data(), InnerTriangle.size(), WHITE, 0.01);
+            fillLogoArray(OuterTriangle.data(), OuterTriangle.size(), CYAN, 0.004);
+        }
+        */
+        // did have one bright wandering point but it was too ugly
+        // Coord wanderPixel = coord(Contour[Contour.size() - 1 - contourIndex]);
+        // setLogo(wanderPixel.x, wanderPixel.y, contourColor);
+        // // and another, as a tail
+        // if (contourIndex < Contour.size() - 1) {
+        //     wanderPixel = coord(Contour[Contour.size() - 2 - contourIndex]);
+        //     uint32_t paleContour = mixRgb(BLACK, contourColor, 0.07);
+        //     setLogo(wanderPixel.x, wanderPixel.y, paleContour);
+        // }
+
+        // and change colors when a round is completed
+        /*
+        if (contourIndex == Contour.size() - 1) {
+            contourColor = uint32_t(CRGB(30, 90 + perlin8(SEGMENT.call) % 80, 170));
+        }
+        */
     }
 
     if (IS_BASE_SEGMENT) {
-        for (int s = 0; s < 4; s++)
-        for (i = 0; i < 16; i++) {
-            x = baseX0[s] + baseDX[s] * i;
-            y = baseY0[s] + baseDY[s] * i;
+        static float phi = 0.;
+        static float omega = 1.7;
 
-            // strip.now is millisec uint32_t, so this will overflow ~ every 49 days. who shits a give.
-            float wave = sin_t(PI / 15. * (static_cast<float>(i) - 0.007 * strip.now));
-            float abs_wave = (wave > 0. ? wave : -wave);
-            float slow_wave = 0.7 + 0.3 * sin_t(TWO_PI / 10000. * strip.now);
+        SEGMENT.fadeToBlackBy(20);
 
-            color.hue = color_.hue - 20. * wave * abs_wave;
-            // color.val = color_.val * abs_wave * slow_wave;
+        for (const auto& coord : baseCoordinates()) {
+            FloatRgb col0 = cosinePalette(
+                0.2 * time,
+                {0.29, 0.22, 0.5},
+                {0.43, 0.74, 0.74},
+                {1.3, 0.7, 1.2},
+                {0.85, 0.14, 0.83}
+            );
+            // read the "uvS" coordinate as s == 0 in the middle of every side, becoming (-)0.5 towards the corners
+            float uvs = min(abs(coord.uv.x), abs(coord.uv.y));
+            float d = (1. - cos_t(M_PI * 5. * uvs)) * (0.6 + 0.4 * sin_t(M_TWOPI * 0.125 * beat));
+            col0.scale(d*d);
+            col0.grade(0.8);
+            float dimTheMiddle = 1. - 0.8 * cos(M_PI * uvs);
+            col0.scale(dimTheMiddle);
 
-            color.hue = s == 0 ? 0 : s == 1 ? 90 : s == 2 ? 180 : 210;
+            // now add a rotating line, showing the use of SDF geometry
+            phi = 0.25 * beat * omega;
+            Vec2 end{1, 1};
+            end.rotate(phi);
+            d = coord.sdLine(-end, end);
+            d = exp(-2.5*d);
 
-            if (i == 0) {
-                // first is always white
-                color.sat = 0;
-            } else {
-                color.sat = 100;
-            }
-
-            color.val = ((strip.now % 16000) > (i * 1000)) ? 255 : 20;
-
-            setBaseHSV(x, y, color);
+            color = col0.toCHSV();
+            color.sat = mix8(255, 20, d);
+            color.val = max(color.val, static_cast<uint8_t>(255.*d));
+            setBase(coord.x, coord.y, color);
         }
     }
 
-    auto stepTime = fmod_t(strip.now, 2.0);
-    setBack(stepTime < 1.0 ? WHITE : BLACK);
-    setFloor(stepTime < 1.0 ? BLACK : WHITE);
+    // for the first argument of beatsin8_t (accum88 type), "BPM << 8" just oscillates once per beat
+    //uint8_t fourBeatSineWave = beatsin8_t(SEGMENT.speed << 6, 0, 255);
+    uint8_t beatSineWave = beatsin8_t(SEGMENT.speed << 8, 0, 255);
+    uint8_t annoyingBlink = mix8(255, 0, exp(-fractBeat));
+
+    if (IS_BACK_LED) {
+        setSingle(annoyingBlink);
+
+    } else if (IS_FLOOR_LED) {
+        setSingle(fmodf(beat, 4.) < 1. ? beatSineWave : BLACK);
+
+    }
 
     return FRAMETIME;
-} // mode_DeadlineTrophy
-
+}
 
 static const char _data_FX_MODE_DEADLINE_TROPHY[] PROGMEM =
-    "DEADLINE TROPHY@;;!;1";
-    // <-- TODO: find out how the parameters are encoded here. default is "name@;;!;1"
-
+    "DEADLINE Trophy@BPM,!,Contour Intensity,!,!;!,!;!;2;c1=0,sx=110,pal=59";
+// <-- cf. https://kno.wled.ge/interfaces/json-api/#effect-metadata
+// <EffectParameters>;<Colors>;<Palette>;<Flags>;<Defaults>
+// <Colors> = !,! = Two Defaults
+// <Palette> = ! = Default enabled (Empty would disable palette selection)
+// <Flags> = 2 for "it needs the 2D matrix", add "v" and/or "f" for AudioReactive volume and frequency.
+// <Defaults>: <ParameterCode>=<Value>
+//             si=0 is "sound interaction" (for AudioReactive),
+// <EffectParameters>: These are then read by (if defined, comma-separated)
+//   sx = SEGMENT.speed (int 0-255)
+//   ix = SEGMENT.intensity (int 0-255)
+//   c1 = SEGMENT.custom1 (int 0-255)
+//   c2 = SEGMENT.custom2 (int 0-255)
+//   c3 = SEGMENT.custom3 (int 0-31)
+//   o1 = SEGMENT.check1 (bool)
+//   o2 = SEGMENT.check2 (bool)
+//   o3 = SEGMENT.check3 (bool)

@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <random>
 #include <cmath>
+#include <chrono>
 
 
 // our most important "strip" reference, now globally defined
@@ -34,8 +35,21 @@ unsigned Segment::_vLength = 0;
 unsigned Segment::_vWidth = 0;
 unsigned Segment::_vHeight = 0;
 uint32_t Segment::_currentColors[NUM_COLORS] = {0, 0, 0};
+CRGBPalette16 Segment::_currentPalette    = CRGBPalette16(CRGB::Black);
 
 // now, some stuff the embedded environment would give us for free...
+
+unsigned long millis() {
+    static std::chrono::steady_clock::time_point startedAt =
+            std::chrono::steady_clock::now();
+    // Note: being an unsigned long, this overflows every 49 days, but so does it on the device
+    auto elapsed =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - startedAt
+            );
+    return static_cast<unsigned long>(elapsed.count());
+}
+
 
 int32_t min(int32_t a, int32_t b) {
     return b < a ? b : a;
