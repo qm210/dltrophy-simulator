@@ -177,6 +177,8 @@ void SimulatorApp::resetTime() {
     currentTime = 0;
     previousTime = 0; // or maybe -1.f/currentFps. But need to check zero then.
     currentFrame = 0;
+    shader->iTime.set(currentTime);
+    shader->iFrame.set(currentFrame);
 }
 
 float SimulatorApp::calcAverageFps() {

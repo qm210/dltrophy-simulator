@@ -31,12 +31,20 @@ extern float beat;
 extern float bpm;
 extern float globalTime;
 
+struct LinearBpm {
+    float beat;
+    float bpm;
+};
+
 class Prototyper {
 private:
     bool enabled = false;
     std::chrono::steady_clock::time_point startedAt;
 
     static mode_ptr _mode;
+
+    float beat = 0.;
+    std::vector<LinearBpm> bpms;
 
 public:
     explicit Prototyper(bool enabled)

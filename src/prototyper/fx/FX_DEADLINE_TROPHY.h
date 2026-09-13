@@ -86,7 +86,6 @@ uint16_t mode_DeadlineTrophy(void) {
         // <-- factor 4 because of bars-per-beat
         globalTime += elapsed;
     }
-    float time = globalTime;
     float fractBeat = fmodf(beat, 1.);
     float fractBar = fmodf(beat, 0.25f);
     float halfBeat = floor(beat * 2.f) * 0.5;
