@@ -43,7 +43,6 @@ private:
 
     static mode_ptr _mode;
 
-    float beat = 0.;
     std::vector<LinearBpm> bpms;
 
 public:

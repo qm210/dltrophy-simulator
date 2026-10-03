@@ -1,5 +1,4 @@
-# build container in order to make this work under linux
-# (ubuntu as first example, must modify for fedora blahbluhblahblaaah)
+# build container for Ubuntu, adjust for your distro, or ask QM.
 FROM ubuntu:25.04
 
 LABEL maintainer="qm210"

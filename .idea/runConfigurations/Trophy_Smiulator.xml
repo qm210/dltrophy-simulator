@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Trophy Smiulator" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-f &quot;D:\Coding\dltrophy-simulator\src\shaders\fragment.glsl&quot;" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Project" TARGET_NAME="dltrophy_simulator" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Project" RUN_TARGET_NAME="dltrophy_simulator">
+  <configuration default="false" name="Trophy Smiulator" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-f &quot;D:\Coding\dltrophy-simulator\src\shaders\fragment.glsl&quot;" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dltrophy_simulator" TARGET_NAME="dltrophy_simulator" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dltrophy_simulator" RUN_TARGET_NAME="dltrophy_simulator">
     <method v="2">
       <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_Copy Shaders into Build" />
       <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />

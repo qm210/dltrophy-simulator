@@ -110,7 +110,7 @@ private:
 public:
     T value;
 
-    explicit Uniform<T>(std::string  name)
+    explicit Uniform(std::string name)
             : name(std::move(name))
             {}
 

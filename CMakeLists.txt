@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.22...4.0)
 project(dltrophy_simulator)
 set(CMAKE_CXX_STANDARD 20)
 
@@ -10,28 +10,28 @@ include(FetchContent)
 FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
-        GIT_TAG        8e15281d34a8b9ee9271ccce38177a3d812456f8
+        GIT_TAG        3.5.1
 )
 FetchContent_MakeAvailable(glfw)
 
 FetchContent_Declare(
         glm
         GIT_REPOSITORY https://github.com/g-truc/glm.git
-        GIT_TAG        1.0.1
+        GIT_TAG        1.0.3
 )
 FetchContent_MakeAvailable(glm)
 
 FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG        docking
+        GIT_TAG        v1.92.9b-docking
 )
 FetchContent_MakeAvailable(imgui)
 
 FetchContent_Declare(
         json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG        v3.11.0
+        GIT_TAG        v3.12.0
 )
 FetchContent_MakeAvailable(json)
 
@@ -39,7 +39,7 @@ set(USE_ZLIB OFF CACHE BOOL "Enable zlib support" FORCE)
 FetchContent_Declare(
         ixwebsocket
         GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
-        GIT_TAG v11.4.6
+        GIT_TAG        v11.4.6
 )
 FetchContent_MakeAvailable(ixwebsocket)
 
@@ -47,22 +47,23 @@ set(BUILD_MinimalCppSocket_SAMPLES OFF CACHE BOOL "Build MinimalSocket samples" 
 FetchContent_Declare(
         min_sock
         GIT_REPOSITORY https://github.com/andreacasalino/Minimal-Socket
-        GIT_TAG        master
+        GIT_TAG        v.3.1
 )
-FetchContent_MakeAvailable(min_sock)
-
 FetchContent_Declare(
         portaudio
         GIT_REPOSITORY https://github.com/PortAudio/portaudio.git
-        GIT_TAG v19.7.0
+        GIT_TAG        v19.7.0
 )
-FetchContent_MakeAvailable(portaudio)
 FetchContent_Declare(
         libsndfile
         GIT_REPOSITORY https://github.com/erikd/libsndfile.git
-        GIT_TAG master
+        GIT_TAG        1.2.2
 )
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+FetchContent_MakeAvailable(min_sock)
+FetchContent_MakeAvailable(portaudio)
 FetchContent_MakeAvailable(libsndfile)
+unset(CMAKE_POLICY_VERSION_MINIMUM)
 
 
 # copy the shader sources into the build folder (relevant for debug)
