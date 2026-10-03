@@ -30,9 +30,10 @@ WORKDIR /home/team210
 
 COPY --chown=team210:team210 . .
 
-# this is meant to be used as (when the image is named simulator-build)
-# docker run --rm -v $PWD/build:/mnt simulator-build
+# this is meant to be used as
+# docker run --rm -v $PWD/build:/mnt $imageName
 
-CMD cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build build && \
-    cp -rv build/* /mnt
+CMD ["sh", "-c", \
+     "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && \
+      cmake --build build && \
+      cp -rv build/* /mnt"]
